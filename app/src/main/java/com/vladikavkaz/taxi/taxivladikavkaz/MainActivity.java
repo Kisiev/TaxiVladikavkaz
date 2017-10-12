@@ -3,6 +3,7 @@ package com.vladikavkaz.taxi.taxivladikavkaz;
 import android.app.Activity;
 import android.content.res.Resources;;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.util.Log;
@@ -13,6 +14,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
+
+import com.vladikavkaz.taxi.taxivladikavkaz.models.GeoLocationModel;
+import com.vladikavkaz.taxi.taxivladikavkaz.rest.RestService;
+
+import java.util.List;
 
 import butterknife.BindAnim;
 import butterknife.BindView;
@@ -27,8 +33,14 @@ import ru.yandex.yandexmapkit.map.OnMapListener;
 import ru.yandex.yandexmapkit.overlay.Overlay;
 import ru.yandex.yandexmapkit.utils.GeoPoint;
 import ru.yandex.yandexmapkit.utils.ScreenPoint;
+import rx.Observable;
+import rx.Observer;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 public class MainActivity extends Activity implements OnMapListener, View.OnClickListener {
+    Observable<GeoLocationModel> geoLocationModelsObserver;
+    GeoLocationModel geoLocationModels;
     BottomSheetBehavior behavior;
     @BindView(R.id.edit_placefrom_bs)
     EditText editFromText;
@@ -64,17 +76,47 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         return screenPoint;
     }
 
+    private String formatedRequest(String request){
+        String[] parse = request.split(",");
+        if (parse.length > 2)
+            return parse[parse.length - 2] + "," + parse[parse.length - 1];
+        else return request;
+    }
+
     private void getTitleOnMap(){
+        RestService restService = new RestService();
         GeoPoint geoPoint;
         geoPoint = overlay.getMapController().getGeoPoint(getCenterScreen());
-        mapController.getDownloader().getGeoCode(new GeoCodeListener() {
-            @Override
-            public boolean onFinishGeoCode(GeoCode geoCode) {
-                if (geoCode != null)
-                    textTitle.setText(geoCode.getTitle());
-                return true;
-            }
-        }, geoPoint);
+        geoLocationModelsObserver = restService.getGeoInfo(geoPoint.getLon() + "," + geoPoint.getLat(), "json", "1");
+        geoLocationModelsObserver.subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<GeoLocationModel>() {
+                    @Override
+                    public void onCompleted() {
+                        if (geoLocationModels != null)
+                            if (!geoLocationModels.getResponse().getGeoObjectCollection().getMetaDataProperty().getGeocoderResponseMetaData().getFound().equals("0")) {
+                                textTitle.setText(formatedRequest(geoLocationModels.getResponse()
+                                        .getGeoObjectCollection()
+                                        .getFeatureMember()
+                                        .get(0)
+                                        .getGeoObject()
+                                        .getMetaDataProperty()
+                                        .getGeocoderMetaData()
+                                        .getText()));
+                                editFromText.setText(textTitle.getText());
+                            }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(GeoLocationModel geoLocationModelsOn) {
+                        geoLocationModels = geoLocationModelsOn;
+                    }
+                });
     }
 
     private void serchLocationByStreet(){
@@ -103,6 +145,7 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
             case MapEvent.MSG_SCROLL_END:
             case MapEvent.MSG_ZOOM_END:
                 getTitleOnMap();
+                editFromText.setText(textTitle.getText());
                 break;
 
         }
@@ -113,7 +156,6 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         switch (v.getId()){
             case R.id.next_button:
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-                editFromText.setText(textTitle.getText());
                 break;
         }
     }
