@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">TaxiVladikavkaz</string>
     <string name="next_text">Далее</string>
+    <string name="time_auto">Время подачи</string>
+    <string name="pay_sp">Способ оплаты</string>
+    <string name="comments_for_taxi">+ комментарий, пожелания</string>
+    <string name="call_taxi_text">Вызвать такси</string>
 </resources>

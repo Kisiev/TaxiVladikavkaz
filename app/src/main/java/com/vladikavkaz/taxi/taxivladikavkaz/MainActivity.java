@@ -2,16 +2,19 @@ package com.vladikavkaz.taxi.taxivladikavkaz;
 
 import android.app.Activity;
 import android.content.res.Resources;;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
+import android.support.v7.widget.AppCompatDrawableManager;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -21,6 +24,7 @@ import com.vladikavkaz.taxi.taxivladikavkaz.rest.RestService;
 import java.util.List;
 
 import butterknife.BindAnim;
+import butterknife.BindDrawable;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import ru.yandex.yandexmapkit.MapController;
@@ -38,14 +42,18 @@ import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-public class MainActivity extends Activity implements OnMapListener, View.OnClickListener {
+public class MainActivity extends Activity implements OnMapListener, View.OnClickListener, View.OnTouchListener {
     Observable<GeoLocationModel> geoLocationModelsObserver;
     GeoLocationModel geoLocationModels;
     BottomSheetBehavior behavior;
-    @BindView(R.id.edit_placefrom_bs)
-    EditText editFromText;
-    @BindView(R.id.edit_placeto_bs)
-    EditText editToText;
+    @BindView(R.id.relative_from)
+    View relative_from;
+    @BindView(R.id.relative_to)
+    View relative_to;
+    @BindView(R.id.text_placefrom_bs)
+    TextView textFromText;
+    @BindView(R.id.text_placeto_bs)
+    TextView textToText;
     @BindView(R.id.next_button)
     Button nextButton;
     @BindView(R.id.bottom_sheet)
@@ -61,6 +69,12 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
     Animation fadeIn;
     @BindAnim(R.anim.fade_out)
     Animation fadeOut;
+    @BindView(R.id.image_center)
+    ImageView imageCenterScreen;
+    @BindDrawable(R.drawable.ic_place_green_24dp)
+    Drawable greenFlag;
+    @BindDrawable(R.drawable.ic_place_black_24dp)
+    Drawable blackFlag;
     private void initMapYandex(){
         mapController = mapView.getMapController();
         overlayManager = new OverlayManager(mapController);
@@ -68,12 +82,12 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         overlay = new Overlay(mapController);
         mapController.setPositionNoAnimationTo(new GeoPoint(43.0222284, 44.678499), 91);
     }
-    private ScreenPoint getCenterScreen(){
+    private GeoPoint getCenterScreenLocation(){
         Resources res = getResources();
         float displayHeight = res.getDisplayMetrics().heightPixels;
         float displayWidth = res.getDisplayMetrics().widthPixels;
         ScreenPoint screenPoint = new ScreenPoint(displayWidth / 2, displayHeight / 2);
-        return screenPoint;
+        return overlay.getMapController().getGeoPoint(screenPoint);
     }
 
     private String formatedRequest(String request){
@@ -83,11 +97,9 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         else return request;
     }
 
-    private void getTitleOnMap(){
+    private void getTitleOnMap(String requestText){
         RestService restService = new RestService();
-        GeoPoint geoPoint;
-        geoPoint = overlay.getMapController().getGeoPoint(getCenterScreen());
-        geoLocationModelsObserver = restService.getGeoInfo(geoPoint.getLon() + "," + geoPoint.getLat(), "json", "1");
+        geoLocationModelsObserver = restService.getGeoInfo(requestText, "json", "1");
         geoLocationModelsObserver.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<GeoLocationModel>() {
@@ -103,7 +115,10 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                                         .getMetaDataProperty()
                                         .getGeocoderMetaData()
                                         .getText()));
-                                editFromText.setText(textTitle.getText());
+                                if (imageCenterScreen.getDrawable() != greenFlag) {
+                                    textFromText.setText(textTitle.getText());
+                                }else
+                                    textToText.setText(textTitle.getText());
                             }
                     }
 
@@ -132,10 +147,31 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         initBottomSheet();
         mapController.addMapListener(this);
         nextButton.setOnClickListener(this);
+        relative_from.setOnTouchListener(this);
+        relative_to.setOnTouchListener(this);
     }
+
 
     private void initBottomSheet() {
         behavior = BottomSheetBehavior.from(bottomSheet);
+        behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                switch (newState){
+                    case BottomSheetBehavior.STATE_EXPANDED:
+                        nextButton.setVisibility(View.GONE);
+                        break;
+                    case BottomSheetBehavior.STATE_COLLAPSED:
+                        nextButton.setVisibility(View.VISIBLE);
+                        break;
+                }
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+
+            }
+        });
     }
 
     @Override
@@ -144,10 +180,7 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
             case MapEvent.MSG_SCALE_END:
             case MapEvent.MSG_SCROLL_END:
             case MapEvent.MSG_ZOOM_END:
-                getTitleOnMap();
-                editFromText.setText(textTitle.getText());
-                break;
-
+                getTitleOnMap(getCenterScreenLocation().getLon() + "," + getCenterScreenLocation().getLat());
         }
     }
 
@@ -158,5 +191,18 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
                 break;
         }
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        switch (v.getId()){
+            case R.id.relative_from:
+                imageCenterScreen.setImageDrawable(blackFlag);
+                break;
+            case R.id.relative_to:
+                imageCenterScreen.setImageDrawable(greenFlag);
+                break;
+        }
+        return false;
     }
 }

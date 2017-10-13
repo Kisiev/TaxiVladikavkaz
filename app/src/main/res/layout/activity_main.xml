@@ -40,7 +40,7 @@
         android:id="@+id/next_button"
         android:paddingBottom="30dp"
         android:textSize="7pt"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/standart_margin"
         android:text="@string/next_text"
         android:background="@color/colorNullOpacity"
         app:layout_anchor="@+id/bottom_sheet"

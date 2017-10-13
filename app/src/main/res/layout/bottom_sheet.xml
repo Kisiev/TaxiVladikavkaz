@@ -6,6 +6,7 @@
     android:layout_height="wrap_content"
     android:id="@+id/bottom_sheet"
     app:behavior_hideable="true"
+    app:behavior_peekHeight="0dp"
     app:layout_behavior="android.support.design.widget.BottomSheetBehavior">
     <android.support.v7.widget.CardView
         android:layout_width="match_parent"
@@ -17,18 +18,21 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
+                android:layout_margin="@dimen/standart_margin"
                 android:id="@+id/relative_from">
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:layout_alignParentLeft="true"
                     android:id="@+id/image_placefrom_bs"
                     android:src="@drawable/ic_place_black_24dp"/>
-                <EditText
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:id="@+id/edit_placefrom_bs"
-                    android:theme="@style/Theme.App.Base"
+                    android:id="@+id/text_placefrom_bs"
+                    android:layout_centerInParent="true"
+                    android:lines="1"
                     android:layout_toRightOf="@id/image_placefrom_bs"/>
             </RelativeLayout>
             <View
@@ -39,20 +43,116 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
+                android:layout_margin="@dimen/standart_margin"
                 android:id="@+id/relative_to">
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:layout_alignParentLeft="true"
                     android:id="@+id/image_placeto_bs"
                     android:src="@drawable/ic_place_green_24dp"/>
-                <EditText
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:id="@+id/edit_placeto_bs"
-                    android:theme="@style/Theme.App.Base"
+                    android:id="@+id/text_placeto_bs"
+                    android:layout_centerInParent="true"
+                    android:lines="1"
                     android:layout_toRightOf="@id/image_placeto_bs"/>
+
             </RelativeLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/dividerColor">
+            </View>
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/standart_margin"
+                android:id="@+id/relative_pay_bs">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_weight="1">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/time_auto"/>
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="@color/colorBlack"
+                            android:textSize="6pt" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_weight="1">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/pay_sp"/>
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/colorBlack"
+                            android:gravity="center"
+                            android:textSize="6pt" />
+                    </LinearLayout>
+                </LinearLayout>
+            </RelativeLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/dividerColor">
+            </View>
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/standart_margin"
+                android:theme="@style/Theme.App.Base"
+                android:hint="@string/comments_for_taxi"
+                android:enabled="false"/>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/dividerColor">
+            </View>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:background="@color/colorYellow"
+                android:orientation="vertical" >
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textSize="6pt"
+                    android:textColor="@color/colorBlack"
+                    android:text="@string/call_taxi_text"/>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="Посадка 49р"/>
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/dividerColor">
+            </View>
         </LinearLayout>
 
     </android.support.v7.widget.CardView>
