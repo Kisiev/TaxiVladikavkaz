@@ -163,7 +163,6 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         ButterKnife.bind(this);
         initMapYandex(savedInstanceState);
         initBottomSheet();
-        getMyLocation = new GetMyLocation(this);
         mapController.addMapListener(this);
         nextButton.setOnClickListener(this);
         relative_from.setOnTouchListener(this);
@@ -224,13 +223,8 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
                 break;
             case R.id.image_find_me:
-                try {
-                    if (getMyLocation != null)
-                        if (getMyLocation.getLocation().getLatitude() != 0 && getMyLocation.getLocation().getLongitude() != 0) {
-                            mapController.setPositionAnimationTo(new GeoPoint(getMyLocation.getLocation().getLatitude(), getMyLocation.getLocation().getLongitude()));
-                        }
-                } catch (NullPointerException e){
-                    Toast.makeText(this, "Проверьте, включена ли геолокация ?", Toast.LENGTH_SHORT).show();
+                if (mapController.getOverlayManager().getMyLocation().getMyLocationItem() != null){
+                    mapController.setPositionAnimationTo(mapController.getOverlayManager().getMyLocation().getMyLocationItem().getGeoPoint());
                 }
                 break;
         }
