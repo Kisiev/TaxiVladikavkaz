@@ -2,6 +2,7 @@ package com.vladikavkaz.taxi.taxivladikavkaz;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;;
 import android.graphics.drawable.Drawable;
@@ -24,10 +25,12 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.vladikavkaz.taxi.taxivladikavkaz.models.GeoLocationModel;
 import com.vladikavkaz.taxi.taxivladikavkaz.rest.RestService;
 
+import java.io.Serializable;
 import java.util.List;
 
 import butterknife.BindAnim;
@@ -54,7 +57,7 @@ import rx.schedulers.Schedulers;
 
 public class MainActivity extends Activity implements OnMapListener, View.OnClickListener, View.OnTouchListener{
     Observable<GeoLocationModel> geoLocationModelsObserver;
-    GeoLocationModel geoLocationModels;
+    public GeoLocationModel geoLocationModels;
     BottomSheetBehavior behavior;
     @BindView(R.id.relative_from)
     View relative_from;
@@ -88,7 +91,10 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
     @BindDrawable(R.drawable.ic_place_black_24dp)
     Drawable blackFlag;
     GetMyLocation getMyLocation;
-    private void initMapYandex(){
+    GeoPoint getCenterScreen;
+    int visibility = View.GONE;
+    private void initMapYandex(Bundle bundle){
+
         mapController = mapView.getMapController();
         overlayManager = new OverlayManager(mapController);
         overlayManager.getMyLocation().setEnabled(true);
@@ -101,7 +107,7 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         float displayHeight = res.getDisplayMetrics().heightPixels;
         float displayWidth = res.getDisplayMetrics().widthPixels;
         ScreenPoint screenPoint = new ScreenPoint(displayWidth / 2, displayHeight / 2);
-        return overlay.getMapController().getGeoPoint(screenPoint);
+        return mapController.getGeoPoint(screenPoint);
     }
 
     private String formatedRequest(String request){
@@ -149,22 +155,13 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                 });
     }
 
-    private void serchLocationByStreet(){
-
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-    }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        initMapYandex();
+        initMapYandex(savedInstanceState);
         initBottomSheet();
         getMyLocation = new GetMyLocation(this);
         mapController.addMapListener(this);
@@ -197,21 +194,28 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         });
     }
 
+
     @Override
     public void onMapActionEvent(MapEvent mapEvent) {
         switch (mapEvent.getMsg()){
             case MapEvent.MSG_SCALE_END:
             case MapEvent.MSG_SCROLL_END:
             case MapEvent.MSG_ZOOM_END:
-                getTitleOnMap(getCenterScreenLocation().getLon() + "," + getCenterScreenLocation().getLat());
+                getCenterScreen = getCenterScreenLocation();
+                getTitleOnMap(getCenterScreen.getLon() + "," + getCenterScreen.getLat());
                 break;
             case MapEvent.MSG_SCALE_MOVE:
             case MapEvent.MSG_SCROLL_MOVE:
             case MapEvent.MSG_ZOOM_MOVE:
                 behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 break;
+            case MapEvent.MSG_SCROLL_BEGIN:
+            case MapEvent.MSG_SCALE_BEGIN:
+            case MapEvent.MSG_ZOOM_BEGIN:
+                break;
         }
     }
+
 
     @Override
     public void onClick(View v) {
@@ -220,8 +224,13 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
                 break;
             case R.id.image_find_me:
-                if (getMyLocation.getLocation().getLatitude() != 0 && getMyLocation.getLocation().getLongitude() != 0){
-                    mapController.setPositionAnimationTo(new GeoPoint(getMyLocation.getLocation().getLatitude(), getMyLocation.getLocation().getLongitude()));
+                try {
+                    if (getMyLocation != null)
+                        if (getMyLocation.getLocation().getLatitude() != 0 && getMyLocation.getLocation().getLongitude() != 0) {
+                            mapController.setPositionAnimationTo(new GeoPoint(getMyLocation.getLocation().getLatitude(), getMyLocation.getLocation().getLongitude()));
+                        }
+                } catch (NullPointerException e){
+                    Toast.makeText(this, "Проверьте, включена ли геолокация ?", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }
@@ -237,6 +246,8 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                 imageCenterScreen.setImageDrawable(greenFlag);
                 break;
         }
-        return false;
+
+        return true;
     }
+
 }
