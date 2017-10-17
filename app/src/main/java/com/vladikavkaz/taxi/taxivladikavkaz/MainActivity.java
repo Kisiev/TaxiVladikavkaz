@@ -4,18 +4,22 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.Resources;;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
@@ -32,6 +36,8 @@ import com.vladikavkaz.taxi.taxivladikavkaz.rest.RestService;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Timer;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindAnim;
 import butterknife.BindDrawable;
@@ -44,6 +50,7 @@ import ru.yandex.yandexmapkit.OverlayManager;
 import ru.yandex.yandexmapkit.map.GeoCode;
 import ru.yandex.yandexmapkit.map.GeoCodeListener;
 import ru.yandex.yandexmapkit.map.MapEvent;
+import ru.yandex.yandexmapkit.map.MapLayer;
 import ru.yandex.yandexmapkit.map.OnMapListener;
 import ru.yandex.yandexmapkit.overlay.Overlay;
 import ru.yandex.yandexmapkit.overlay.OverlayItem;
@@ -55,7 +62,7 @@ import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-public class MainActivity extends Activity implements OnMapListener, View.OnClickListener, View.OnTouchListener{
+public class MainActivity extends Activity implements OnMapListener, View.OnClickListener, View.OnTouchListener, Animation.AnimationListener{
     Observable<GeoLocationModel> geoLocationModelsObserver;
     public GeoLocationModel geoLocationModels;
     BottomSheetBehavior behavior;
@@ -67,6 +74,8 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
     View relative_to;
     @BindView(R.id.text_placefrom_bs)
     TextView textFromText;
+    @BindView(R.id.view_content)
+    View viewContent;
     @BindView(R.id.text_placeto_bs)
     TextView textToText;
     @BindView(R.id.next_button)
@@ -92,6 +101,8 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
     Drawable blackFlag;
     GetMyLocation getMyLocation;
     GeoPoint getCenterScreen;
+    Handler handler;
+    Runnable runnable;
     int visibility = View.GONE;
     private void initMapYandex(Bundle bundle){
 
@@ -141,6 +152,8 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                                 }else
                                     textToText.setText(textTitle.getText());
                             }
+                            handler.removeCallbacks(runnable);
+                            invisibleItem(View.VISIBLE);
                     }
 
                     @Override
@@ -168,6 +181,19 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         relative_from.setOnTouchListener(this);
         relative_to.setOnTouchListener(this);
         findMeImage.setOnClickListener(this);
+        fadeIn.setAnimationListener(this);
+        fadeOut.setAnimationListener(this);
+        mapController.getMapView().setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN){
+                    if (visibility != View.INVISIBLE)
+                        invisibleItem(View.INVISIBLE);
+                }
+                return false;
+            }
+        });
+        initHandler();
     }
 
 
@@ -193,6 +219,22 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
         });
     }
 
+    private void initHandler(){
+        handler = new Handler();
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                getCenterScreen = getCenterScreenLocation();
+                getTitleOnMap(getCenterScreen.getLon() + "," + getCenterScreen.getLat());
+            }
+        };
+
+    }
+
+    private void invisibleItem(final int visibility){
+        textTitle.startAnimation(visibility == View.INVISIBLE? fadeOut:fadeIn);
+        this.visibility = visibility;
+    }
 
     @Override
     public void onMapActionEvent(MapEvent mapEvent) {
@@ -200,17 +242,17 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
             case MapEvent.MSG_SCALE_END:
             case MapEvent.MSG_SCROLL_END:
             case MapEvent.MSG_ZOOM_END:
-                getCenterScreen = getCenterScreenLocation();
-                getTitleOnMap(getCenterScreen.getLon() + "," + getCenterScreen.getLat());
+                handler.postDelayed(runnable, 1000);
                 break;
             case MapEvent.MSG_SCALE_MOVE:
             case MapEvent.MSG_SCROLL_MOVE:
             case MapEvent.MSG_ZOOM_MOVE:
-                behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                handler.removeCallbacks(runnable);
                 break;
             case MapEvent.MSG_SCROLL_BEGIN:
             case MapEvent.MSG_SCALE_BEGIN:
             case MapEvent.MSG_ZOOM_BEGIN:
+
                 break;
         }
     }
@@ -227,6 +269,7 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                     mapController.setPositionAnimationTo(mapController.getOverlayManager().getMyLocation().getMyLocationItem().getGeoPoint());
                 }
                 break;
+
         }
     }
 
@@ -240,8 +283,28 @@ public class MainActivity extends Activity implements OnMapListener, View.OnClic
                 imageCenterScreen.setImageDrawable(greenFlag);
                 break;
         }
-
         return true;
     }
 
+    @Override
+    public void onBackPressed() {
+        if (behavior.getState() == BottomSheetBehavior.STATE_EXPANDED){
+            behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        } else finish();
+    }
+
+    @Override
+    public void onAnimationStart(Animation animation) {
+
+    }
+
+    @Override
+    public void onAnimationEnd(Animation animation) {
+        textTitle.setVisibility(animation == fadeIn? View.VISIBLE:View.INVISIBLE);
+    }
+
+    @Override
+    public void onAnimationRepeat(Animation animation) {
+
+    }
 }
